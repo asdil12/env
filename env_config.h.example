@@ -1,0 +1,8 @@
+#define WIFI_SSID "Fritzbox 12345"
+#define WIFI_PSK "1234567890"
+#define MQTT_SERVER "mqtt.lan"
+#define MQTT_PORT 1883
+#define MQTT_USER NULL
+#define MQTT_PASS NULL
+#define MQTT_TOPIC "sensors/air/sleeping_room"
+#define MEASUREMENT_INTERVAL 5000

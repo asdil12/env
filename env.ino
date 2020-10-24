@@ -4,22 +4,12 @@
 #include <Adafruit_CCS811.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include "env_config.h"
 
 #define SEALEVELPRESSURE_HPA (1013.25)
 
 //#define I2C_SDA 21
 //#define I2C_SCL 22
-
-
-const char* ssid = "";
-const char* password = "";
- 
-const char* mqttServer = "kai.heidler.lan";
-const int mqttPort = 1883;
-//const char* mqttUser = "";
-//const char* mqttPassword = "";
-
-const unsigned long delayTime = 5000;
 
 
 //Wire wire = Wire();
@@ -60,9 +50,8 @@ void scan_i2c() {
 void mqtt_connect() {
   while (!mqtt_client.connected()) {
     Serial.println("Connecting to MQTT...");
-    //if (mqtt_client.connect("ESP32Client", mqttUser, mqttPassword)) {
-    mqtt_client.setServer(mqttServer, mqttPort);
-    if (mqtt_client.connect("ESP32Client", NULL, NULL)) {
+    mqtt_client.setServer(MQTT_SERVER, MQTT_PORT);
+    if (mqtt_client.connect("ESP32Client", MQTT_USER, MQTT_PASS)) {
       Serial.println("connected");
     } else {
       Serial.print("failed with state ");
@@ -75,25 +64,28 @@ void mqtt_connect() {
 void setup() {
   pinMode(2, OUTPUT);
   digitalWrite(2, HIGH);
+
+  delay(5000);
   
   Serial.begin(115200);
   while(!Serial){}
- 
+
+  retry_setup:
   scan_i2c();
 
   bool status;
   status = bme.begin(0x76);  
   if (!status) {
     Serial.println("Could not find a valid BME280 sensor, check wiring!");
-    while (1);
+    goto retry_setup;
   }
   status = ccs.begin(0x5B);  
   if (!status) {
     Serial.println("Could not find a valid CCS811 sensor, check wiring!");
-    while (1);
+    goto retry_setup;
   }
 
-  WiFi.begin(ssid, password);
+  WiFi.begin(WIFI_SSID, WIFI_PSK);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.println("Connecting to WiFi..");
@@ -155,11 +147,11 @@ void loop() {
 
   mqtt_connect();
 
-  if (mqtt_client.publish("sensors/air/sleeping_room", json.c_str()) == true) {
+  if (mqtt_client.publish(MQTT_TOPIC, json.c_str()) == true) {
     Serial.println("Success sending message");
   } else {
     Serial.println("Error sending message");
   }
 
-  delay(delayTime);
+  delay(MEASUREMENT_INTERVAL);
 }
